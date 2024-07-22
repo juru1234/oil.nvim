@@ -166,6 +166,7 @@ M.parse = function(bufnr)
     return diffs, errors
   end
 
+
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, true)
   local scheme, path = util.parse_url(bufname)
   local column_defs = columns.get_supported_columns(adapter)
@@ -192,6 +193,10 @@ M.parse = function(bufnr)
       seen_names[name] = true
     end
   end
+
+  -- hack to be compatible with Lua 5.1
+  -- use return instead of goto
+ (function ()
   for i, line in ipairs(lines) do
     if line:match("^/%d+") then
       -- Parse the line for an existing entry
@@ -203,10 +208,10 @@ M.parse = function(bufnr)
           end_lnum = i,
           col = 0,
         })
-        goto continue
+        return
       elseif result.data.id == 0 then
         -- Ignore entries with ID 0 (typically the "../" entry)
-        goto continue
+       return
       end
       local parsed_entry = result.data
       local entry = result.entry
@@ -226,7 +231,7 @@ M.parse = function(bufnr)
           end_lnum = i,
           col = 0,
         })
-        goto continue
+       return
       end
       assert(entry)
 
@@ -281,7 +286,7 @@ M.parse = function(bufnr)
           end_lnum = i,
           col = 0,
         })
-        goto continue
+        return
       end
       if name ~= "" then
         local link_pieces = vim.split(name, " -> ", { plain = true })
@@ -300,8 +305,8 @@ M.parse = function(bufnr)
         })
       end
     end
-    ::continue::
   end
+ end)()
 
   for name, child_id in pairs(original_entries) do
     table.insert(diffs, {
